@@ -1,39 +1,61 @@
-import { FlatList, StyleSheet, Text, TouchableOpacity, RefreshControl, View, Image } from 'react-native'
-import React, { useState } from 'react'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import EmptyState from '../../components/EmptyState'
-import { getUserPosts, signOut } from '../../service/appwrite'
-import useAppwrite from '../../service/useAppwrite'
-import VideoCard from '../../components/VideoCard'
-import { useGlobalContext } from '../../context/GlobalProvider'
-import { icons } from '../../constants'
-import InfoBox from '../../components/InfoBox'
-import { router } from 'expo-router'
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { FlatList, StyleSheet, Text, TouchableOpacity, RefreshControl, View, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import EmptyState from '../../components/EmptyState';
+import { getUserPosts, signOut } from '../../service/appwrite'; // Nếu bạn cần
+import useAppwrite from '../../service/useAppwrite'; // Nếu bạn cần
+import VideoCard from '../../components/VideoCard';
+import { useGlobalContext } from '../../context/GlobalProvider';
+import { icons } from '../../constants';
+import InfoBox from '../../components/InfoBox';
+import { router } from 'expo-router';
+import { MaterialIcons } from '@expo/vector-icons';
 
 const Profile = () => {
-  const { setIsLogged, user, setUser } = useGlobalContext()
-  const { data: posts, refetch } = useAppwrite(() => getUserPosts(user.$id))
+  const { user, setIsLogged } = useGlobalContext();
+  const [posts, setPosts] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [profile, setProfile] = useState(null); // State để lưu thông tin profile
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await refetch();
-    setRefreshing(false);
-  };
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const token = user?.token; // Lấy token từ user
+        const response = await fetch('https://locketcouplebe-production.up.railway.app/auth/my-profile', {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${token}`, // Gửi token trong header
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        const data = await response.json();
+        
+        if (data.code === 200) {
+          setProfile(data.data); // Lưu thông tin người dùng vào state
+        } else {
+          console.error(data.message);
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    };
 
-  const handleDeleteImageChange = (value) => {
-    if (value) onRefresh();
-  };
-
-
+    fetchProfile();
+  }, [user]);
 
   const logout = async () => {
-    await signOut();
-    setUser(null);
-    setIsLogged(false);
+    try {
+      await signOut();
+      setIsLogged(false);
+      router.replace('/sign-in');
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
-    router.replace("/sign-in");
+  const onRefresh = async () => {
+    // Refresh logic for your posts
   };
 
   return (
