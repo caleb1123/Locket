@@ -1,30 +1,27 @@
-import { ScrollView, Text, View, Image, Alert} from 'react-native'
-import React, { useState } from 'react'
-import { SafeAreaView } from 'react-native-safe-area-context'
-
-import { images } from '../../constants'
-
-import FormField from '../../components/FormField'
-import CustomButton from '../../components/CustomButton'
-import { Link, router } from 'expo-router'
-
-import {getCurrentUser, signIn } from '../../service/appwrite'
-import { useGlobalContext } from '../../context/GlobalProvider'
+import React, { useState } from 'react';
+import { ScrollView, Text, View, Image, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage'; // Import AsyncStorage for token handling
+import { images } from '../../constants';
+import FormField from '../../components/FormField';
+import CustomButton from '../../components/CustomButton';
+import { Link, router } from 'expo-router';
+import { useGlobalContext } from '../../context/GlobalProvider';
 
 const SignIn = () => {
-  const {setUser, setIsLogged} =  useGlobalContext()
+  const { setUser, setIsLogged } = useGlobalContext();
   const [form, setForm] = useState({
     email: '',
-    password: ''
-  })
-  const [isSubmitting, setIsSubmitting] = useState(false)
+    password: '',
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const submit = async () => {
-    if (form.email === "" || form.password === "") {
+    if (form.email === '' || form.password === '') {
       Alert.alert('Error', 'Vui lòng nhập đầy đủ');
       return; // Add a return to prevent further execution
     }
-  
+
     setIsSubmitting(true);
     try {
       const response = await fetch('https://locketcouplebe-production.up.railway.app/auth/login', {
@@ -37,14 +34,22 @@ const SignIn = () => {
           password: form.password,
         }),
       });
-  
+
       if (!response.ok) {
         throw new Error('Login failed');
       }
-  
+
       const result = await response.json();
-      setUser(result); // Update with the appropriate user data from the response
+      
+      // Store token in AsyncStorage
+      await AsyncStorage.setItem('authToken', result.data.token);
+      console.log('Stored Token:', result.data.token);
+
+      // Set user and login status
+      setUser(result);
       setIsLogged(true);
+
+      // Navigate to the home screen
       router.replace('/home');
     } catch (error) {
       Alert.alert('Error', error.message);
@@ -52,8 +57,6 @@ const SignIn = () => {
       setIsSubmitting(false);
     }
   };
-  
-
 
   return (
     <SafeAreaView className="bg-black h-full">
@@ -61,7 +64,7 @@ const SignIn = () => {
         <View className="w-full justify-center min-h-[83vh] px-4 my-6">
           <Image
             source={images.blinket_logo}
-            resizeMode='contain'
+            resizeMode="contain"
             className="w-[115px] h-[50px]"
           />
 
@@ -71,7 +74,7 @@ const SignIn = () => {
 
           <FormField
             title="Email"
-            value={form.email} 
+            value={form.email}
             handleChangeText={(e) => setForm({ ...form, email: e })}
             otherStyles="mt-7"
             keyboardType="email-address"
@@ -79,7 +82,7 @@ const SignIn = () => {
 
           <FormField
             title="Password"
-            value={form.password} 
+            value={form.password}
             handleChangeText={(e) => setForm({ ...form, password: e })}
             otherStyles="mt-7"
           />
@@ -95,12 +98,14 @@ const SignIn = () => {
             <Text className="text-lg text-gray-100 font-pregular">
               Chưa có tài khoản?
             </Text>
-            <Link href="/sign-up" className="text-lg font-pmedium text-primary-300">Đăng ký ngay</Link>
+            <Link href="/sign-up" className="text-lg font-pmedium text-primary-300">
+              Đăng ký ngay
+            </Link>
           </View>
         </View>
       </ScrollView>
     </SafeAreaView>
-  )
-}
+  );
+};
 
-export default SignIn
+export default SignIn;

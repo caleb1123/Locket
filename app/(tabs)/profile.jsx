@@ -1,38 +1,48 @@
-import { FlatList, StyleSheet, Text, TouchableOpacity, RefreshControl, View, Image } from 'react-native';
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import EmptyState from '../../components/EmptyState';
-import { getUserPosts, signOut } from '../../service/appwrite'; // Nếu bạn cần
-import useAppwrite from '../../service/useAppwrite'; // Nếu bạn cần
-import VideoCard from '../../components/VideoCard';
+import { FlatList, View, Text, TouchableOpacity, Image, RefreshControl, StyleSheet } from 'react-native';
 import { useGlobalContext } from '../../context/GlobalProvider';
-import { icons } from '../../constants';
+import VideoCard from '../../components/VideoCard';
 import InfoBox from '../../components/InfoBox';
-import { router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
+import { signOut } from '../../service/appwrite'; // Nếu bạn cần
+import { router } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 const Profile = () => {
   const { user, setIsLogged } = useGlobalContext();
   const [posts, setPosts] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
-  const [profile, setProfile] = useState(null); // State để lưu thông tin profile
+
+  // State riêng cho từng thông tin từ API
+  const [fullName, setFullName] = useState('');
+  const [userName, setUserName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const token = user?.token; // Lấy token từ user
+        const storedToken = await AsyncStorage.getItem('authToken');
         const response = await fetch('https://locketcouplebe-production.up.railway.app/auth/my-profile', {
           method: 'GET',
           headers: {
-            Authorization: `Bearer ${token}`, // Gửi token trong header
+            Authorization: `Bearer ${storedToken}`,
             'Content-Type': 'application/json',
           },
         });
-        
+
         const data = await response.json();
-        
+        console.log(storedToken);
         if (data.code === 200) {
-          setProfile(data.data); // Lưu thông tin người dùng vào state
+          // Cập nhật từng state với dữ liệu từ API
+          setFullName(data.data.fullName);
+          setUserName(data.data.userName);
+          setEmail(data.data.email);
+          setPhone(data.data.phone);
+          setAvatarUrl(data.data.avatarUrl);
         } else {
           console.error(data.message);
         }
@@ -55,7 +65,7 @@ const Profile = () => {
   };
 
   const onRefresh = async () => {
-    // Refresh logic for your posts
+    // Logic refresh cho danh sách bài đăng
   };
 
   return (
@@ -80,11 +90,10 @@ const Profile = () => {
             {/* Avatar Section */}
             <View className="mt-5 w-20 h-20 border border-secondary rounded-[46px] flex justify-center items-center relative">
               <Image
-                source={{ uri: profile?.avatarUrl }} // Sử dụng avatar từ profile
+                source={{ uri: avatarUrl }} // Sử dụng avatarUrl từ state
                 className="w-[90%] h-[90%] rounded-[46px]"
                 resizeMode="cover"
               />
-              {/* Add Button Overlay */}
               <TouchableOpacity
                 className="absolute bottom-0 right-0 bg-yellow-500 w-6 h-6 rounded-full flex items-center justify-center"
               >
@@ -92,9 +101,9 @@ const Profile = () => {
               </TouchableOpacity>
             </View>
 
-            {/* Username */}
+            {/* Hiển thị thông tin user */}
             <InfoBox
-              title={profile?.userName} // Hiển thị tên người dùng từ profile
+              title={userName} // Hiển thị tên người dùng từ profile
               containerStyles="mt-5"
               titleStyles="text-lg"
             />
@@ -115,26 +124,6 @@ const Profile = () => {
               >
                 <Text style={styles.buttonText}>Edit Profile</Text>
                 <MaterialIcons name="person" size={20} color="white" />
-              </TouchableOpacity>
-
-              {/* Change Email */}
-              <TouchableOpacity
-                style={{ backgroundColor: '#3b3a3a' }}
-                className="flex flex-row justify-between items-center px-4 py-3 border-b border-gray-700 bg-gray-800"
-                onPress={() => {/* Add your change email functionality here */ }}
-              >
-                <Text style={styles.buttonText}>Change email address</Text>
-                <MaterialIcons name="email" size={20} color="white" />
-              </TouchableOpacity>
-
-              {/* Report a Problem */}
-              <TouchableOpacity
-                style={{ backgroundColor: '#3b3a3a' }}
-                className="flex flex-row justify-between items-center px-4 py-3 border-b border-gray-700 bg-gray-800"
-                onPress={() => {/* Add your report problem functionality here */ }}
-              >
-                <Text style={styles.buttonText}>Report a problem</Text>
-                <MaterialIcons name="report-problem" size={20} color="white" />
               </TouchableOpacity>
 
               {/* Log Out */}
