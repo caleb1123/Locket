@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { FlatList, View, Text, TouchableOpacity, Image, RefreshControl, StyleSheet, Modal } from 'react-native'; // Ensure Modal is imported
+import { FlatList, View, Text, TouchableOpacity, Image, RefreshControl, StyleSheet, Modal } from 'react-native'; 
 import { useGlobalContext } from '../../context/GlobalProvider';
 import VideoCard from '../../components/VideoCard';
 import InfoBox from '../../components/InfoBox';
@@ -8,6 +8,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import FormField from '../../components/FormField';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as ImagePicker from 'expo-image-picker';
 
 const Profile = () => {
   const { user, setIsLogged } = useGlobalContext();
@@ -38,7 +39,6 @@ const Profile = () => {
         });
 
         const data = await response.json();
-        console.log(storedToken);
         if (data.code === 200) {
           setFullName(data.data.fullName);
           setUserName(data.data.userName);
@@ -69,15 +69,96 @@ const Profile = () => {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    // Refresh logic here
+    // Fetch updated data here
     setRefreshing(false);
   };
-  console.log('Avatar URL:', avtUrl);
 
-  const handleEditProfile = () => {
-    // Handle saving edited information
-    console.log({ fullName, userName, email, phone });
+  const handleEditProfile = async () => {
+    try {
+      const storedToken = await AsyncStorage.getItem('authToken');
+      const response = await fetch('https://locketcouplebe-production.up.railway.app/auth/update', {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${storedToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fullName,
+          address,
+          email,
+          dob,
+        }),
+      });
+  
+      const data = await response.json();
+      console.log(data);
+  
+      // Check for a successful update
+      if (data.code === 200) {
+        console.log('Profile updated successfully');
+      } else {
+        console.error(data.message);
+        alert("Cập nhật không thành công: " + data.message); // Notify error
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      alert("An error occurred while updating your profile."); // Notify error
+    }
+  
     setModalVisible(false); // Close modal after saving
+  };
+  
+
+  // Function to open image picker and change avatar
+  const openImagePicker = async () => {
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (permissionResult.granted === false) {
+      alert("Permission to access camera and gallery is required!");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      const localUri = result.assets[0].uri;
+      setAvatarUrl(localUri);
+      await handleChangeAvatar(localUri);  // Call API to change avatar
+    }
+  };
+
+  const handleChangeAvatar = async (imageUri) => {
+    try {
+      const storedToken = await AsyncStorage.getItem('authToken');
+      const formData = new FormData();
+      formData.append('file', {
+        uri: imageUri,
+        type: 'image/jpeg', // or other image type
+        name: 'avatar.jpg',
+      });
+
+      const response = await fetch('https://locketcouplebe-production.up.railway.app/auth/change-avt', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${storedToken}`,
+          'Content-Type': 'multipart/form-data',
+        },
+        body: formData,
+      });
+
+      const data = await response.json();
+      if (data.code === 200) {
+        console.log('Avatar changed successfully');
+      } else {
+        console.error(data.message);
+      }
+    } catch (error) {
+      console.error('Error changing avatar:', error);
+    }
   };
 
   return (
@@ -108,7 +189,7 @@ const Profile = () => {
               />
               <TouchableOpacity
                 className="absolute bottom-0 right-0 bg-yellow-500 w-6 h-6 rounded-full flex items-center justify-center"
-                onPress={() => setModalVisible(true)}
+                onPress={openImagePicker} // Open image picker on press
               >
                 <Text style={{ fontSize: 14, color: 'white' }}>+</Text>
               </TouchableOpacity>
@@ -182,8 +263,8 @@ const Profile = () => {
               title="Date of Birth"
               value={dob}
               handleChangeText={(e) => setDob(e)}
-              keyboardType="default" // Change this to "numeric" if you prefer
-              placeholder="DD/MM/YYYY" // Optional placeholder to guide users
+              keyboardType="default"
+              placeholder="DD/MM/YYYY"
               otherStyles="mt-7"
             />
 
@@ -214,30 +295,27 @@ const styles = StyleSheet.create({
   buttonText: {
     fontFamily: 'Poppins-Medium',
     color: 'white',
-    fontSize: 16,
   },
   logoutText: {
     fontFamily: 'Poppins-Medium',
     color: 'red',
-    fontSize: 16,
   },
   modalContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
   },
   modalContent: {
-    width: '80%',
-    backgroundColor: 'white',
+    width: '90%',
     borderRadius: 10,
     padding: 20,
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 15,
-    color: '#7B7B8B',
+    color: '#fff',
+    marginBottom: 20,
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -245,10 +323,9 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   button: {
+    padding: 10,
+    borderRadius: 5,
     flex: 1,
     marginHorizontal: 5,
-    padding: 10, // Add padding for a better touch area
-    borderRadius: 5, // Round the corners of the button
-    alignItems: 'center', // Center text horizontally
   },
 });
