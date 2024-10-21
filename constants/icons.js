@@ -17,6 +17,7 @@ import flash from "../assets/icons/flash.png";
 import flash_on from "../assets/icons/flash-on.png";
 import send from "../assets/icons/send.png";
 import share from "../assets/icons/share.png";
+import couple from "../assets/icons/CoupleIcon.png";
 
 export default {
   play,
@@ -37,5 +38,6 @@ export default {
   flash,
   flash_on,
   send,
-  share
+  share,
+  couple
 };

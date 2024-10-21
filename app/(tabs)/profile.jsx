@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { FlatList, View, Text, TouchableOpacity, Image, RefreshControl, StyleSheet, Modal } from 'react-native'; 
+import { FlatList, View, Text, TouchableOpacity, Image, RefreshControl, StyleSheet, Modal } from 'react-native';
 import { useGlobalContext } from '../../context/GlobalProvider';
 import VideoCard from '../../components/VideoCard';
 import InfoBox from '../../components/InfoBox';
@@ -89,10 +89,10 @@ const Profile = () => {
           dob,
         }),
       });
-  
+
       const data = await response.json();
       console.log(data);
-  
+
       // Check for a successful update
       if (data.code === 200) {
         console.log('Profile updated successfully');
@@ -104,10 +104,10 @@ const Profile = () => {
       console.error('Error updating profile:', error);
       alert("An error occurred while updating your profile."); // Notify error
     }
-  
+
     setModalVisible(false); // Close modal after saving
   };
-  
+
 
   // Function to open image picker and change avatar
   const openImagePicker = async () => {
@@ -209,6 +209,17 @@ const Profile = () => {
                 <MaterialIcons name="person" size={20} color="#7B7B8B" />
                 <Text style={[styles.headerText, { marginLeft: 8 }]}>General</Text>
               </View>
+
+              {/* Sent Request */}
+              <TouchableOpacity
+                style={{ backgroundColor: '#3b3a3a' }}
+                className="flex flex-row justify-between items-center px-4 py-3 border-b border-gray-700 rounded-t-lg bg-gray-800"
+                onPress={() => setModalVisible(true)}
+              >
+                <Text style={styles.buttonText}>Add lover</Text>
+                <MaterialIcons name="person" size={20} color="white" />
+              </TouchableOpacity>
+
 
               {/* Edit Profile */}
               <TouchableOpacity
