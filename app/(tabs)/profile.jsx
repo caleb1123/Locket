@@ -14,9 +14,14 @@ const Profile = () => {
   const { user, setIsLogged } = useGlobalContext();
   const [posts, setPosts] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [searchResults, setSearchResults] = useState({});
+  const [userNameLover, setUserNameLover] = useState('');
+
 
   // State for modal visibility
-  const [modalVisible, setModalVisible] = useState(false);
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [addLoverModalVisible, setAddLoverModalVisible] = useState(false);
+  const [showLoverModalVisible, setShowLoverModalVisible] = useState(false);
 
   // State for profile information
   const [fullName, setFullName] = useState('');
@@ -25,6 +30,7 @@ const Profile = () => {
   const [address, setAddress] = useState('');
   const [dob, setDob] = useState('');
   const [avtUrl, setAvatarUrl] = useState(null);
+ 
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -73,6 +79,43 @@ const Profile = () => {
     setRefreshing(false);
   };
 
+  const handleSearchLover = async () => {
+    try {
+      // Lấy token từ AsyncStorage
+      const storedToken = await AsyncStorage.getItem('authToken');
+      // Kiểm tra xem token có tồn tại không
+      if (!storedToken) {
+        console.error('No authentication token found');
+        return;
+      }
+
+      // Thực hiện gọi API để tìm người yêu
+      const response = await fetch(`https://locketcouplebe-production.up.railway.app/auth/find-by-user?username=` + userNameLover, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${storedToken}`, // Thêm token vào tiêu đề
+          'Content-Type': 'application/json',
+        },
+      });
+
+      // Kiểm tra phản hồi từ API
+      if (!response.ok) {
+        throw new Error('Failed to fetch data');
+      }
+
+      // Chuyển đổi phản hồi thành JSON
+      const data = await response.json();
+
+      // Cập nhật trạng thái với kết quả tìm kiếm
+      setSearchResults(data.data); // Chỉ lấy phần 'data' từ phản hồi API
+      console.log(data.data);
+    } catch (error) {
+      console.error('Error searching for lover:', error);
+    }
+  };
+
+  
+
   const handleEditProfile = async () => {
     try {
       const storedToken = await AsyncStorage.getItem('authToken');
@@ -105,7 +148,7 @@ const Profile = () => {
       alert("An error occurred while updating your profile."); // Notify error
     }
 
-    setModalVisible(false); // Close modal after saving
+    setEditModalVisible(false); // Close modal after saving
   };
 
 
@@ -214,7 +257,7 @@ const Profile = () => {
               <TouchableOpacity
                 style={{ backgroundColor: '#3b3a3a' }}
                 className="flex flex-row justify-between items-center px-4 py-3 border-b border-gray-700 rounded-t-lg bg-gray-800"
-                onPress={() => setModalVisible(true)}
+                onPress={() => setAddLoverModalVisible(true)}
               >
                 <Text style={styles.buttonText}>Add lover</Text>
                 <MaterialIcons name="person" size={20} color="white" />
@@ -224,8 +267,8 @@ const Profile = () => {
               {/* Edit Profile */}
               <TouchableOpacity
                 style={{ backgroundColor: '#3b3a3a' }}
-                className="flex flex-row justify-between items-center px-4 py-3 border-b border-gray-700 rounded-t-lg bg-gray-800"
-                onPress={() => setModalVisible(true)}
+                className="flex flex-row justify-between items-center px-4 py-3 border-b border-gray-700 bg-gray-800"
+                onPress={() => setEditModalVisible(true)}
               >
                 <Text style={styles.buttonText}>Edit Profile</Text>
                 <MaterialIcons name="person" size={20} color="white" />
@@ -246,8 +289,77 @@ const Profile = () => {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       />
 
+      {/* Popup Add Lover Modal */}
+      <Modal transparent={true} animationType="slide" visible={addLoverModalVisible}>
+        <View style={styles.modalContainer}>
+          <View style={[styles.modalContent, { backgroundColor: '#222222' }]}>
+            <Text style={styles.modalTitle}>Add Lover</Text>
+
+            {/* Form to add lover */}
+            <FormField
+              title="Lover's Name"
+              value={userNameLover}
+              handleChangeText={(e) => setUserNameLover(e)}
+              otherStyles="mt-7"
+            />
+
+            {/* Save button */}
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity onPress={() => {
+                handleSearchLover(); // Gọi hàm tìm kiếm
+                setUserNameLover(''); // Xóa trường nhập liệu
+                setAddLoverModalVisible(false);
+                setShowLoverModalVisible(true);
+              }} style={[styles.button, { backgroundColor: '#63B5F6' }]}>
+                <Text style={styles.buttonText}>Search</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setAddLoverModalVisible(false)} style={[styles.button, { backgroundColor: '#63B5F6' }]}>
+                <Text style={styles.buttonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal to show lover details */}
+      <Modal transparent={true} animationType="slide" visible={showLoverModalVisible}>
+        <View style={styles.modalContainer}>
+          <View style={[styles.modalContent, { backgroundColor: '#222222' }]}>
+            <Text style={styles.modalTitle}>Lover Details</Text>
+
+            {/* Form to display lover's information */}
+            <FormField
+              title="Full Name"
+              label="Full Name"
+              placeholder="Enter lover's name"
+              value={searchResults.fullName || ''} // Hiển thị tên đầy đủ
+              editable={false}
+            />
+            <FormField
+              label="Username"
+              placeholder="Enter lover's username"
+              value={searchResults.userName || ''} // Hiển thị tên người dùng
+              editable={false}
+            />
+            <FormField
+              title="Email "
+              label="Email"
+              placeholder="Enter lover's email"
+              value={searchResults.email || ''} // Hiển thị email
+              editable={false}
+            />
+
+            {/* Save button */}
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity onPress={() => setShowLoverModalVisible(false)} style={[styles.button, { backgroundColor: '#63B5F6' }]}>
+                <Text style={styles.buttonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
       {/* Popup Edit Profile Modal */}
-      <Modal transparent={true} animationType="slide" visible={modalVisible}>
+      <Modal transparent={true} animationType="slide" visible={editModalVisible}>
         <View style={styles.modalContainer}>
           <View style={[styles.modalContent, { backgroundColor: '#222222' }]}>
             <Text style={styles.modalTitle}>Edit Profile</Text>
@@ -284,7 +396,10 @@ const Profile = () => {
               <TouchableOpacity onPress={handleEditProfile} style={[styles.button, { backgroundColor: '#63B5F6' }]}>
                 <Text style={styles.buttonText}>Save</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => setModalVisible(false)} style={[styles.button, { backgroundColor: '#63B5F6' }]}>
+              <TouchableOpacity onPress={() =>{
+                setUserNameLover('');
+               setEditModalVisible(false)
+               }} style={[styles.button, { backgroundColor: '#63B5F6' }]}>
                 <Text style={styles.buttonText}>Cancel</Text>
               </TouchableOpacity>
             </View>
@@ -338,5 +453,10 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     flex: 1,
     marginHorizontal: 5,
+  },
+  resultText: {
+    fontSize: 18,
+    color: 'white',
+    marginBottom: 10,
   },
 });
