@@ -30,7 +30,7 @@ const Profile = () => {
   const [address, setAddress] = useState('');
   const [dob, setDob] = useState('');
   const [avtUrl, setAvatarUrl] = useState(null);
- 
+
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -114,7 +114,7 @@ const Profile = () => {
     }
   };
 
-  
+
 
   const handleEditProfile = async () => {
     try {
@@ -291,35 +291,58 @@ const Profile = () => {
 
       {/* Popup Add Lover Modal */}
       <Modal transparent={true} animationType="slide" visible={addLoverModalVisible}>
-        <View style={styles.modalContainer}>
-          <View style={[styles.modalContent, { backgroundColor: '#222222' }]}>
-            <Text style={styles.modalTitle}>Add Lover</Text>
+  <View style={styles.modalContainer}>
+    <View style={[styles.modalContent, { backgroundColor: '#222222' }]}>
+      <Text style={styles.modalTitle}>Add Lover</Text>
 
-            {/* Form to add lover */}
-            <FormField
-              title="Lover's Name"
-              value={userNameLover}
-              handleChangeText={(e) => setUserNameLover(e)}
-              otherStyles="mt-7"
-            />
+      {searchResults.avatarUrl && (
+        <Image
+          source={{ uri: searchResults.avatarUrl }}
+          style={{
+            width: 90,
+            height: 90,
+            borderRadius: 46,
+            alignSelf: 'center',
+            marginBottom: 10,
+          }}
+          resizeMode="cover"
+        />
+      )}
 
-            {/* Save button */}
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity onPress={() => {
-                handleSearchLover(); // Gọi hàm tìm kiếm
-                setUserNameLover(''); // Xóa trường nhập liệu
-                setAddLoverModalVisible(false);
-                setShowLoverModalVisible(true);
-              }} style={[styles.button, { backgroundColor: '#63B5F6' }]}>
-                <Text style={styles.buttonText}>Search</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => setAddLoverModalVisible(false)} style={[styles.button, { backgroundColor: '#63B5F6' }]}>
-                <Text style={styles.buttonText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      {/* Form to add lover */}
+      <FormField
+        title="Lover's Name"
+        value={userNameLover}
+        handleChangeText={(e) => setUserNameLover(e)}
+        otherStyles="mt-7"
+      />
+
+      {/* Save button */}
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity
+          onPress={() => {
+            handleSearchLover(); // Gọi hàm tìm kiếm
+            setUserNameLover(''); // Xóa trường nhập liệu
+            setAddLoverModalVisible(false);
+            setShowLoverModalVisible(true);
+          }}
+          style={[styles.button, { backgroundColor: '#63B5F6' }]}
+        >
+          <Text style={styles.buttonText}>Search</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => setAddLoverModalVisible(false)}
+          style={[styles.button, { backgroundColor: '#63B5F6' }]}
+        >
+          <Text style={styles.buttonText}>Cancel</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </View>
+</Modal>
+
+
+
 
       {/* Modal to show lover details */}
       <Modal transparent={true} animationType="slide" visible={showLoverModalVisible}>
@@ -396,10 +419,10 @@ const Profile = () => {
               <TouchableOpacity onPress={handleEditProfile} style={[styles.button, { backgroundColor: '#63B5F6' }]}>
                 <Text style={styles.buttonText}>Save</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() =>{
+              <TouchableOpacity onPress={() => {
                 setUserNameLover('');
-               setEditModalVisible(false)
-               }} style={[styles.button, { backgroundColor: '#63B5F6' }]}>
+                setEditModalVisible(false)
+              }} style={[styles.button, { backgroundColor: '#63B5F6' }]}>
                 <Text style={styles.buttonText}>Cancel</Text>
               </TouchableOpacity>
             </View>
