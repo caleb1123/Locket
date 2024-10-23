@@ -9,6 +9,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Button, ScrollView, StyleSheet, Text, TouchableOpacity, View, Image, Alert, SafeAreaView, useWindowDimensions, RefreshControl } from 'react-native';
 import { Video, ResizeMode } from 'expo-av'
 import { useIsFocused } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 
 import { shareAsync } from 'expo-sharing';
@@ -72,34 +74,58 @@ const Home = () => {
     }
   };
   const submitImage = async () => {
-    if (
-      (formImage.title === "") |
-      !formImage.image
-    ) {
+    if (formImage.title === "" || !formImage.image) {
       return Alert.alert("Vui lòng nhập nội dung");
     }
-
+  
     setUploadingImage(true);
     try {
-      await createImagePost({
-        ...formImage,
-        userId: user.$id,
-      });
-
-      Alert.alert("Success", "Post uploaded successfully");
+      const storedToken = await AsyncStorage.getItem('authToken');
+  
+      const formData = new FormData();
+      
+      // Chỉ thêm file ảnh vào formData mà không cần thêm 'uri' hay 'name'
+      formData.append("file", formImage.image);
+  
+      // In ra nội dung của FormData để kiểm tra
+      console.log("Request Body:"+ formData);
+      
+  
+      const response = await fetch(
+        `https://locketcouplebe-production.up.railway.app/photo/uploadFileWithCouple/?title=${formImage.title}`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${storedToken}`,
+            // Không cần thiết lập 'Content-Type', fetch sẽ tự động xử lý khi có FormData
+          },
+          body: formData, // Gửi FormData chứa file ảnh
+        }
+      );
+  
+      const data = await response.json();
+  
+      // Xử lý phản hồi
+      if (data.code === 200) {
+        console.log(data);
+      } else {
+        console.error(data.message);
+      }
     } catch (error) {
-      Alert.alert("Error", error.message);
+      console.error(error);
     } finally {
+      // Đặt lại trạng thái của form
       setFormImage({
         title: "",
-        video: null,
+        image: null,
       });
-
+  
       setUploadingImage(false);
       retakePicture();
-      // router.push("/explore");
     }
   };
+  
+  
 
   const [facing, setFacing] = useState('back');
   const [flash, setFlash] = useState("off");
