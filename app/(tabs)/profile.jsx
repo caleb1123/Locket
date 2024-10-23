@@ -24,6 +24,8 @@ const Profile = () => {
   const [addLoverModalVisible, setAddLoverModalVisible] = useState(false);
   const [showLoverModalVisible, setShowLoverModalVisible] = useState(false);
   const [ShowCoupleRequestModalVisible, setShowCoupleRequestModalVisible] = useState(false);
+  const [showNoLoverModal, setShowNoLoverModal] = useState(false); // For no lover modal
+
   // State for profile information
   const [fullName, setFullName] = useState('');
   const [userName, setUserName] = useState('');
@@ -159,37 +161,42 @@ const Profile = () => {
 
   const loverInvite = async () => {
     try {
-      // Retrieve the token from AsyncStorage
       const storedToken = await AsyncStorage.getItem('authToken');
-
-      // Check if the token exists
       if (!storedToken) {
         console.error('No authentication token found');
         return;
       }
-
-      // Perform the API call to invite a lover
-      const response = await fetch('https://locketcouplebe-production.up.railway.app/couple/LoverInvite', {
+  
+      const response = await fetch(`https://locketcouplebe-production.up.railway.app/couple/LoverInvite`, {
         method: 'GET',
         headers: {
-          Authorization: `Bearer ${storedToken}`, // Add token to the headers
+          'Authorization': `Bearer ${storedToken}`,
           'Content-Type': 'application/json',
         },
       });
-
-      // Parse the JSON response
+  
+      // Check for 404 response
+      if (response.status === 404) {
+        console.log('No lovers found');
+        setShowNoLoverModal(true); // Show no lover modal
+        setLoverInviteResponse(null); // Clear lover invite response
+        return; // Exit the function
+      }
+  
       const data = await response.json();
-
-      // Check if the request was successful and update the state
-      if (response.ok) {
-        setLoverInvite(data); // Store the API response in state
-        console.log('Lover invite response:', data);
+      console.log('Lover invite response:', data);
+  
+      // Check if the request was successful
+      if (data.code === 200) {
+        setLoverInviteResponse(data.data); // Save the response data
+        setShowNoLoverModal(false); // Hide no lover modal
       } else {
-        console.error('Failed to invite lover:', data.message);
+        console.error('Failed to fetch lover invite:', data.message);
+        Alert.alert('Error', data.message || 'An unexpected error occurred');
       }
     } catch (error) {
-      console.error('Error inviting lover:', error);
-      alert('An error occurred while sending the invite.'); // Notify error
+      console.error('Error fetching lover invite:', error);
+      Alert.alert('Error', 'An error occurred while fetching lover invite.');
     }
   };
   const handleEditProfile = async () => {
@@ -376,7 +383,6 @@ const Profile = () => {
                 style={{ backgroundColor: '#3b3a3a' }}
                 className="flex flex-row justify-between items-center px-4 py-3 border-b border-gray-700 bg-gray-800"
                 onPress={() => {
-                  setShowCoupleRequestModalVisible(true)
                   loverInvite()
                 }}
               >
@@ -579,6 +585,20 @@ const Profile = () => {
         </View>
       </Modal>
 
+      {/* Popup No Lover */}
+      <Modal transparent={true} animationType="slide" visible={showNoLoverModal}>
+    <View style={styles.modalContainer}>
+      <View style={[styles.modalContent, { backgroundColor: '#222222' }]}>
+        <Text style={styles.modalTitle}>No Lovers Found</Text>
+        <Text style={{ color: '#fff', textAlign: 'center', marginBottom: 10 }}>There are currently no lovers available.</Text>
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity onPress={() => setShowNoLoverModal(false)} style={[styles.button, { backgroundColor: '#63B5F6' }]}>
+            <Text style={styles.buttonText}>Close</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  </Modal>
 
       {/* Popup Edit Profile Modal */}
       <Modal transparent={true} animationType="slide" visible={editModalVisible}>
