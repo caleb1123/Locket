@@ -22,7 +22,7 @@ const Profile = () => {
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [addLoverModalVisible, setAddLoverModalVisible] = useState(false);
   const [showLoverModalVisible, setShowLoverModalVisible] = useState(false);
-
+  const [ShowCoupleRequestModalVisible, setShowCoupleRequestModalVisible] = useState(false);
   // State for profile information
   const [fullName, setFullName] = useState('');
   const [userName, setUserName] = useState('');
@@ -263,6 +263,15 @@ const Profile = () => {
                 <MaterialIcons name="person" size={20} color="white" />
               </TouchableOpacity>
 
+              {/* Couple Invite */}
+              <TouchableOpacity
+                style={{ backgroundColor: '#3b3a3a' }}
+                className="flex flex-row justify-between items-center px-4 py-3 border-b border-gray-700 bg-gray-800"
+                onPress={() => setShowCoupleRequestModalVisible(true)}
+              >
+                <Text style={styles.buttonText}>Couple Invite</Text>
+                <MaterialIcons name="person" size={20} color="white" />
+              </TouchableOpacity>
 
               {/* Edit Profile */}
               <TouchableOpacity
@@ -291,61 +300,102 @@ const Profile = () => {
 
       {/* Popup Add Lover Modal */}
       <Modal transparent={true} animationType="slide" visible={addLoverModalVisible}>
-  <View style={styles.modalContainer}>
-    <View style={[styles.modalContent, { backgroundColor: '#222222' }]}>
-      <Text style={styles.modalTitle}>Add Lover</Text>
+        <View style={styles.modalContainer}>
+          <View style={[styles.modalContent, { backgroundColor: '#222222' }]}>
+            <Text style={styles.modalTitle}>Add Lover</Text>
 
-      {searchResults.avatarUrl && (
-        <Image
-          source={{ uri: searchResults.avatarUrl }}
-          style={{
-            width: 90,
-            height: 90,
-            borderRadius: 46,
-            alignSelf: 'center',
-            marginBottom: 10,
-          }}
-          resizeMode="cover"
-        />
-      )}
+            
 
-      {/* Form to add lover */}
-      <FormField
-        title="Lover's Name"
-        value={userNameLover}
-        handleChangeText={(e) => setUserNameLover(e)}
-        otherStyles="mt-7"
-      />
+            {/* Form to add lover */}
+            <FormField
+              title="Lover's Name"
+              value={userNameLover}
+              handleChangeText={(e) => setUserNameLover(e)}
+              otherStyles="mt-7"
+            />
 
-      {/* Save button */}
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          onPress={() => {
-            handleSearchLover(); // Gọi hàm tìm kiếm
-            setUserNameLover(''); // Xóa trường nhập liệu
-            setAddLoverModalVisible(false);
-            setShowLoverModalVisible(true);
-          }}
-          style={[styles.button, { backgroundColor: '#63B5F6' }]}
-        >
-          <Text style={styles.buttonText}>Search</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => setAddLoverModalVisible(false)}
-          style={[styles.button, { backgroundColor: '#63B5F6' }]}
-        >
-          <Text style={styles.buttonText}>Cancel</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  </View>
-</Modal>
+            {/* Save button */}
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity
+                onPress={() => {
+                  handleSearchLover(); // Gọi hàm tìm kiếm
+                  setUserNameLover(''); // Xóa trường nhập liệu
+                  setAddLoverModalVisible(false);
+                  setShowLoverModalVisible(true);
+                }}
+                style={[styles.button, { backgroundColor: '#63B5F6' }]}
+              >
+                <Text style={styles.buttonText}>Search</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setAddLoverModalVisible(false)}
+                style={[styles.button, { backgroundColor: '#63B5F6' }]}
+              >
+                <Text style={styles.buttonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
 
 
 
       {/* Modal to show lover details */}
       <Modal transparent={true} animationType="slide" visible={showLoverModalVisible}>
+        <View style={styles.modalContainer}>
+          <View style={[styles.modalContent, { backgroundColor: '#222222' }]}>
+            <Text style={styles.modalTitle}>Lover Details</Text>
+             {/* Hiển thị ảnh avatar nếu có URL */}
+            {searchResults.avatarUrl ? (
+              <Image
+                source={{ uri: searchResults.avatarUrl }}
+                style={{
+                  width: 90,
+                  height: 90,
+                  borderRadius: 45, // Bo tròn ảnh
+                  alignSelf: 'center',
+                  marginBottom: 10,
+                }}
+                resizeMode="cover"
+              />
+            ) : (
+              <Text style={{ color: '#fff', textAlign: 'center', marginBottom: 10 }}>No avatar available</Text>
+            )}     
+            {/* Form to display lover's information */}
+            <FormField
+              title="Full Name"
+              label="Full Name"
+              placeholder="Enter lover's name"
+              value={searchResults.fullName || ''} // Hiển thị tên đầy đủ
+              editable={false}
+            />
+            <FormField
+              label="Username"
+              placeholder="Enter lover's username"
+              value={searchResults.userName || ''} // Hiển thị tên người dùng
+              editable={false}
+            />
+            <FormField
+              title="Email "
+              label="Email"
+              placeholder="Enter lover's email"
+              value={searchResults.email || ''} // Hiển thị email
+              editable={false}
+            />
+
+            {/* Save button */}
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity onPress={() => setShowLoverModalVisible(false)} style={[styles.button, { backgroundColor: '#63B5F6' }]}>
+                <Text style={styles.buttonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal to couple request */}
+      <Modal transparent={true} animationType="slide" visible={ShowCoupleRequestModalVisible}>
         <View style={styles.modalContainer}>
           <View style={[styles.modalContent, { backgroundColor: '#222222' }]}>
             <Text style={styles.modalTitle}>Lover Details</Text>
@@ -372,9 +422,13 @@ const Profile = () => {
               editable={false}
             />
 
-            {/* Save button */}
             <View style={styles.buttonContainer}>
-              <TouchableOpacity onPress={() => setShowLoverModalVisible(false)} style={[styles.button, { backgroundColor: '#63B5F6' }]}>
+              <TouchableOpacity onPress={handleEditProfile} style={[styles.button, { backgroundColor: '#63B5F6' }]}>
+                <Text style={styles.buttonText}>Save</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => {
+                setShowCoupleRequestModalVisible(false);
+              }} style={[styles.button, { backgroundColor: '#63B5F6' }]}>
                 <Text style={styles.buttonText}>Cancel</Text>
               </TouchableOpacity>
             </View>
