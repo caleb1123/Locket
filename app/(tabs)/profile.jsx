@@ -174,6 +174,37 @@ const Profile = () => {
     }
   };
 
+  const sendRequest = async (userId) => {
+    try {
+      // Retrieve the token from AsyncStorage
+      const storedToken = await AsyncStorage.getItem('authToken');
+  
+      // Make the API request with userId in the URL
+      const response = await fetch(`https://locketcouplebe-production.up.railway.app/couple/sendRequest/${userId}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${storedToken}`,
+          'Content-Type': 'application/json', // adjust if necessary
+        },
+        // body can be added if the request expects a payload
+      });
+  
+      // Parse the response
+      const data = await response.json();
+      // Check if the request was successful
+      if (data.code === 200) {
+        console.log('Request sent successfully');
+        Alert.alert('Success', 'Request sent successfully');
+      } else {
+        console.error('Failed to send request:', data.message);
+        Alert.alert('Error', `Failed to send request: ${data.message}`);
+      }
+    } catch (error) {
+      console.error('Error sending request:', error);
+      Alert.alert('Error', 'An error occurred while sending the request');
+    }
+  };
+
   const handleChangeAvatar = async (imageUri) => {
     try {
       const storedToken = await AsyncStorage.getItem('authToken');
@@ -196,6 +227,7 @@ const Profile = () => {
       const data = await response.json();
       if (data.code === 200) {
         console.log('Avatar changed successfully');
+        Alert.alert('Success')
       } else {
         console.error(data.message);
       }
@@ -304,7 +336,7 @@ const Profile = () => {
           <View style={[styles.modalContent, { backgroundColor: '#222222' }]}>
             <Text style={styles.modalTitle}>Add Lover</Text>
 
-            
+
 
             {/* Form to add lover */}
             <FormField
@@ -346,7 +378,7 @@ const Profile = () => {
         <View style={styles.modalContainer}>
           <View style={[styles.modalContent, { backgroundColor: '#222222' }]}>
             <Text style={styles.modalTitle}>Lover Details</Text>
-             {/* Hiển thị ảnh avatar nếu có URL */}
+            {/* Hiển thị ảnh avatar nếu có URL */}
             {searchResults.avatarUrl ? (
               <Image
                 source={{ uri: searchResults.avatarUrl }}
@@ -361,7 +393,7 @@ const Profile = () => {
               />
             ) : (
               <Text style={{ color: '#fff', textAlign: 'center', marginBottom: 10 }}>No avatar available</Text>
-            )}     
+            )}
             {/* Form to display lover's information */}
             <FormField
               title="Full Name"
@@ -386,6 +418,12 @@ const Profile = () => {
 
             {/* Save button */}
             <View style={styles.buttonContainer}>
+              <TouchableOpacity onPress={() => {
+                sendRequest(searchResults.userId); // Call API when Add button is pressed
+                setShowLoverModalVisible(false); // Close modal after request
+              }} style={[styles.button, { backgroundColor: '#63B5F6' }]}>
+                <Text style={styles.buttonText}>Add</Text>
+              </TouchableOpacity>
               <TouchableOpacity onPress={() => setShowLoverModalVisible(false)} style={[styles.button, { backgroundColor: '#63B5F6' }]}>
                 <Text style={styles.buttonText}>Cancel</Text>
               </TouchableOpacity>
@@ -394,12 +432,28 @@ const Profile = () => {
         </View>
       </Modal>
 
-      {/* Modal to couple request */}
+
+      {/* Modal to show lover details */}
       <Modal transparent={true} animationType="slide" visible={ShowCoupleRequestModalVisible}>
         <View style={styles.modalContainer}>
           <View style={[styles.modalContent, { backgroundColor: '#222222' }]}>
-            <Text style={styles.modalTitle}>Lover Details</Text>
-
+            <Text style={styles.modalTitle}>Couple Invite</Text>
+            {/* Hiển thị ảnh avatar nếu có URL */}
+            {searchResults.avatarUrl ? (
+              <Image
+                source={{ uri: searchResults.avatarUrl }}
+                style={{
+                  width: 90,
+                  height: 90,
+                  borderRadius: 45, // Bo tròn ảnh
+                  alignSelf: 'center',
+                  marginBottom: 10,
+                }}
+                resizeMode="cover"
+              />
+            ) : (
+              <Text style={{ color: '#fff', textAlign: 'center', marginBottom: 10 }}>No avatar available</Text>
+            )}
             {/* Form to display lover's information */}
             <FormField
               title="Full Name"
@@ -422,6 +476,7 @@ const Profile = () => {
               editable={false}
             />
 
+            {/* Save button */}
             <View style={styles.buttonContainer}>
               <TouchableOpacity onPress={handleEditProfile} style={[styles.button, { backgroundColor: '#63B5F6' }]}>
                 <Text style={styles.buttonText}>Save</Text>
@@ -435,6 +490,7 @@ const Profile = () => {
           </View>
         </View>
       </Modal>
+
       {/* Popup Edit Profile Modal */}
       <Modal transparent={true} animationType="slide" visible={editModalVisible}>
         <View style={styles.modalContainer}>
