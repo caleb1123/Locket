@@ -16,6 +16,7 @@ const Profile = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [searchResults, setSearchResults] = useState({});
   const [userNameLover, setUserNameLover] = useState('');
+  const [loverInviteResponse, setLoverInvite] = useState({});
 
 
   // State for modal visibility
@@ -114,8 +115,83 @@ const Profile = () => {
     }
   };
 
+  const acceptInvite = async (coupleId) => {
+    console.log('Inviting coupleId:', coupleId); // Log coupleId
+  
+    if (!coupleId) {
+      console.error('No coupleId provided');
+      return;
+    }
+  
+    try {
+      const storedToken = await AsyncStorage.getItem('authToken');
+      if (!storedToken) {
+        console.error('No authentication token found');
+        return;
+      }
+  
+      const response = await fetch(`https://locketcouplebe-production.up.railway.app/couple/acceptRequest/${coupleId}`, {
+        method: 'POST', // Adjust if needed (POST/PUT)
+        headers: {
+          'Authorization': `Bearer ${storedToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+  
+      // Log the response details
+      console.log('Response status:', response.status); // Log response status
+      const data = await response.json(); // Parse the response data
+      console.log('Response data:', data); // Log response data
+  
+      if (response.ok) {
+        console.log('API request successful');
+        // Handle success (e.g., update UI, show success message, etc.)
+      } else {
+        console.error('API request failed:', data.message || 'Unknown error'); // Log error message from API
+      }
+  
+    } catch (error) {
+      console.error('Error accepting invite:', error);
+      alert("An error occurred while accepting the invite."); 
+    }
+  };
+  
 
+  const loverInvite = async () => {
+    try {
+      // Retrieve the token from AsyncStorage
+      const storedToken = await AsyncStorage.getItem('authToken');
 
+      // Check if the token exists
+      if (!storedToken) {
+        console.error('No authentication token found');
+        return;
+      }
+
+      // Perform the API call to invite a lover
+      const response = await fetch('https://locketcouplebe-production.up.railway.app/couple/LoverInvite', {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${storedToken}`, // Add token to the headers
+          'Content-Type': 'application/json',
+        },
+      });
+
+      // Parse the JSON response
+      const data = await response.json();
+
+      // Check if the request was successful and update the state
+      if (response.ok) {
+        setLoverInvite(data); // Store the API response in state
+        console.log('Lover invite response:', data);
+      } else {
+        console.error('Failed to invite lover:', data.message);
+      }
+    } catch (error) {
+      console.error('Error inviting lover:', error);
+      alert('An error occurred while sending the invite.'); // Notify error
+    }
+  };
   const handleEditProfile = async () => {
     try {
       const storedToken = await AsyncStorage.getItem('authToken');
@@ -178,7 +254,7 @@ const Profile = () => {
     try {
       // Retrieve the token from AsyncStorage
       const storedToken = await AsyncStorage.getItem('authToken');
-  
+
       // Make the API request with userId in the URL
       const response = await fetch(`https://locketcouplebe-production.up.railway.app/couple/sendRequest/${userId}`, {
         method: 'POST',
@@ -188,7 +264,7 @@ const Profile = () => {
         },
         // body can be added if the request expects a payload
       });
-  
+
       // Parse the response
       const data = await response.json();
       // Check if the request was successful
@@ -295,13 +371,16 @@ const Profile = () => {
                 <MaterialIcons name="person" size={20} color="white" />
               </TouchableOpacity>
 
-              {/* Couple Invite */}
+              {/* Lover Invite */}
               <TouchableOpacity
                 style={{ backgroundColor: '#3b3a3a' }}
                 className="flex flex-row justify-between items-center px-4 py-3 border-b border-gray-700 bg-gray-800"
-                onPress={() => setShowCoupleRequestModalVisible(true)}
+                onPress={() => {
+                  setShowCoupleRequestModalVisible(true)
+                  loverInvite()
+                }}
               >
-                <Text style={styles.buttonText}>Couple Invite</Text>
+                <Text style={styles.buttonText}>Lover Invite</Text>
                 <MaterialIcons name="person" size={20} color="white" />
               </TouchableOpacity>
 
@@ -433,19 +512,20 @@ const Profile = () => {
       </Modal>
 
 
-      {/* Modal to show lover details */}
+      {/* Modal to show lover Invite */}
       <Modal transparent={true} animationType="slide" visible={ShowCoupleRequestModalVisible}>
         <View style={styles.modalContainer}>
           <View style={[styles.modalContent, { backgroundColor: '#222222' }]}>
-            <Text style={styles.modalTitle}>Couple Invite</Text>
-            {/* Hiển thị ảnh avatar nếu có URL */}
-            {searchResults.avatarUrl ? (
+            <Text style={styles.modalTitle}>Lover Invite</Text>
+
+            {/* Ensure loverInviteResponse and loverInviteResponse.data exist */}
+            {loverInviteResponse?.data?.avatarUrl ? (
               <Image
-                source={{ uri: searchResults.avatarUrl }}
+                source={{ uri: loverInviteResponse.data.avatarUrl }}
                 style={{
                   width: 90,
                   height: 90,
-                  borderRadius: 45, // Bo tròn ảnh
+                  borderRadius: 45, // Round image
                   alignSelf: 'center',
                   marginBottom: 10,
                 }}
@@ -454,42 +534,51 @@ const Profile = () => {
             ) : (
               <Text style={{ color: '#fff', textAlign: 'center', marginBottom: 10 }}>No avatar available</Text>
             )}
+
             {/* Form to display lover's information */}
             <FormField
               title="Full Name"
               label="Full Name"
               placeholder="Enter lover's name"
-              value={searchResults.fullName || ''} // Hiển thị tên đầy đủ
+              value={loverInviteResponse.data?.fullName || ''} // Show full name
               editable={false}
             />
             <FormField
               label="Username"
               placeholder="Enter lover's username"
-              value={searchResults.userName || ''} // Hiển thị tên người dùng
+              value={loverInviteResponse.data?.userName || ''} // Show username
               editable={false}
             />
             <FormField
-              title="Email "
+              title="Email"
               label="Email"
               placeholder="Enter lover's email"
-              value={searchResults.email || ''} // Hiển thị email
+              value={loverInviteResponse.data?.email || ''} // Show email
               editable={false}
             />
 
-            {/* Save button */}
+            {/* Action buttons */}
             <View style={styles.buttonContainer}>
-              <TouchableOpacity onPress={handleEditProfile} style={[styles.button, { backgroundColor: '#63B5F6' }]}>
-                <Text style={styles.buttonText}>Save</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  acceptInvite(loverInviteResponse.data?.coupleId); // Pass coupleId to API
+                  setShowCoupleRequestModalVisible(false)
+                }}
+                style={[styles.button, { backgroundColor: '#63B5F6' }]}>
+                <Text style={styles.buttonText}>Accept</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => {
-                setShowCoupleRequestModalVisible(false);
-              }} style={[styles.button, { backgroundColor: '#63B5F6' }]}>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowCoupleRequestModalVisible(false);
+                }}
+                style={[styles.button, { backgroundColor: '#63B5F6' }]}>
                 <Text style={styles.buttonText}>Cancel</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
+
 
       {/* Popup Edit Profile Modal */}
       <Modal transparent={true} animationType="slide" visible={editModalVisible}>
