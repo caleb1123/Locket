@@ -41,38 +41,66 @@ const Home = () => {
   });
 
   const submit = async () => {
-    if (
-      (form.prompt === "") |
-      (form.title === "") |
-      // !form.thumbnail |
-      !form.video
-    ) {
-      return Alert.alert("Please provide all fields");
+    // Kiểm tra xem các trường bắt buộc có được cung cấp hay không
+    if (form.prompt === "" || form.title === "" || !form.video) {
+        return Alert.alert("Please provide all fields");
     }
 
     setUploading(true);
     try {
-      await createVideoPost({
-        ...form,
-        userId: user.$id,
-      });
+        const storedToken = await AsyncStorage.getItem('authToken');
 
-      Alert.alert("Success", "Post uploaded successfully");
-      reRecording();
-      router.push("/explore");
-    } catch (error) {
-      Alert.alert("Error", error.message);
-    } finally {
-      setForm({
-        title: "",
-        video: null,
-        thumbnail: { "name": "thumbnail_random_picscum.jpg", "size": 174000, "type": "image/jpeg", "uri": "https://picsum.photos/400/300" },
-        prompt: "My promt...",
-      });
+        // Tạo FormData để gửi dữ liệu
+        const formData = new FormData();
 
-      setUploading(false);
-    }
-  };
+        // Thêm các trường khác vào FormData
+        formData.append("prompt", form.prompt);
+        formData.append("title", form.title);
+
+        // Gửi file video (bao gồm URI và type)
+        formData.append("file", { // Đảm bảo tên trường là 'file' để khớp với backend
+            uri: form.video.uri, // URI của video
+            name: form.video.name || "video.mp4", // Tên file video (mặc định là video.mp4 nếu không có)
+            type: form.video.type || "video/mp4" // Định dạng video
+        });
+
+        // Gửi request tới API
+        const response = await fetch(
+            `https://locketcouplebe-production.up.railway.app/photo/uploadFileWithCouple/?title=${formImage.title}`,
+            {
+                method: 'POST',
+                headers: {
+                  Authorization: `Bearer ${storedToken}`,
+                    'Content-Type': 'multipart/form-data', // Đảm bảo form data được gửi
+                },
+                body: formData, // Gửi FormData chứa video và các trường khác
+            }
+        );
+
+        const data = await response.json();
+        if (data.code === 200) {
+            console.log("Upload successful:", data);
+        } else {
+            console.error("Error:", data.message);
+        }
+      } catch (error) {
+        Alert.alert("Error", error.message);
+      } finally {
+        setForm({
+          title: "",
+          video: null,
+          thumbnail: { "name": "thumbnail_random_picscum.jpg", "size": 174000, "type": "image/jpeg", "uri": "https://picsum.photos/400/300" },
+          prompt: "My promt...",
+        });
+  
+        setUploading(false);
+        setVideo(null);
+      }
+    };
+
+
+
+  
   const submitImage = async () => {
     if (formImage.title === "" || !formImage.image) {
       return Alert.alert("Vui lòng nhập nội dung");
@@ -121,7 +149,7 @@ const Home = () => {
       });
   
       setUploadingImage(false);
-      retakePicture();
+      retakePicture()
     }
   };
   
@@ -597,5 +625,3 @@ const styles = StyleSheet.create({
     transform: [{ rotate: '180deg' }],
   },
 });
-
-
