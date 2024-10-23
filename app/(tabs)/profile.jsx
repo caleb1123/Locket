@@ -9,6 +9,8 @@ import FormField from '../../components/FormField';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+
 
 const Profile = () => {
   const { user, setIsLogged } = useGlobalContext();
@@ -17,6 +19,8 @@ const Profile = () => {
   const [searchResults, setSearchResults] = useState({});
   const [userNameLover, setUserNameLover] = useState('');
   const [loverInviteResponse, setLoverInvite] = useState({});
+  const [coupleInforResponse, setCoupleInforRespone] = useState({});
+  
 
 
   // State for modal visibility
@@ -24,7 +28,8 @@ const Profile = () => {
   const [addLoverModalVisible, setAddLoverModalVisible] = useState(false);
   const [showLoverModalVisible, setShowLoverModalVisible] = useState(false);
   const [ShowCoupleRequestModalVisible, setShowCoupleRequestModalVisible] = useState(false);
-  const [showNoLoverModal, setShowNoLoverModal] = useState(false); // For no lover modal
+  const [showNoLoverModal, setShowNoLoverModal] = useState(false);
+  const [showCoupleInfo, setShowCoupleInfor] = useState(false);
 
   // State for profile information
   const [fullName, setFullName] = useState('');
@@ -33,6 +38,8 @@ const Profile = () => {
   const [address, setAddress] = useState('');
   const [dob, setDob] = useState('');
   const [avtUrl, setAvatarUrl] = useState(null);
+  const [coupleName, setCoupleName] = useState('');
+  const [loverName, setLoverName] = useState('');
 
 
   useEffect(() => {
@@ -117,21 +124,58 @@ const Profile = () => {
     }
   };
 
+  const coupleInfor = async () => {
+    try{
+      const storedToken = await AsyncStorage.getItem('authToken');
+      if (!storedToken) {
+        console.error('No authentication token found');
+        return;
+      }
+
+      const response = await fetch(`https://locketcouplebe-production.up.railway.app/couple/getMyLover`, {
+        method: 'GET', // Adjust if needed (POST/PUT)
+        headers: {
+          'Authorization': `Bearer ${storedToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      // Log the response details
+      console.log('Response status:', response.status); // Log response status
+      const data = await response.json(); // Parse the response data
+      console.log('Response data:', data.data); // Log response data
+      setCoupleInforRespone(data.data);
+      setLoverName(data.data.lover.fullName)
+      setCoupleName(data.data.coupleName)
+      if (response.ok) {
+        console.log('API request successful');
+        setShowCoupleInfor(true);
+        // Handle success (e.g., update UI, show success message, etc.)
+      } else {
+        console.error('API request failed:', data.message || 'Unknown error'); // Log error message from API
+      }
+
+    } catch (error) {
+      console.error('Error accepting invite:', error);
+      alert("An error occurred while accepting the invite.");
+    }
+  };
+
   const acceptInvite = async (coupleId) => {
     console.log('Inviting coupleId:', coupleId); // Log coupleId
-  
+
     if (!coupleId) {
       console.error('No coupleId provided');
       return;
     }
-  
+
     try {
       const storedToken = await AsyncStorage.getItem('authToken');
       if (!storedToken) {
         console.error('No authentication token found');
         return;
       }
-  
+
       const response = await fetch(`https://locketcouplebe-production.up.railway.app/couple/acceptRequest/${coupleId}`, {
         method: 'POST', // Adjust if needed (POST/PUT)
         headers: {
@@ -139,25 +183,25 @@ const Profile = () => {
           'Content-Type': 'application/json',
         },
       });
-  
+
       // Log the response details
       console.log('Response status:', response.status); // Log response status
       const data = await response.json(); // Parse the response data
       console.log('Response data:', data); // Log response data
-  
+
       if (response.ok) {
         console.log('API request successful');
         // Handle success (e.g., update UI, show success message, etc.)
       } else {
         console.error('API request failed:', data.message || 'Unknown error'); // Log error message from API
       }
-  
+
     } catch (error) {
       console.error('Error accepting invite:', error);
-      alert("An error occurred while accepting the invite."); 
+      alert("An error occurred while accepting the invite.");
     }
   };
-  
+
 
   const loverInvite = async () => {
     try {
@@ -166,7 +210,7 @@ const Profile = () => {
         console.error('No authentication token found');
         return;
       }
-  
+
       const response = await fetch(`https://locketcouplebe-production.up.railway.app/couple/LoverInvite`, {
         method: 'GET',
         headers: {
@@ -174,7 +218,7 @@ const Profile = () => {
           'Content-Type': 'application/json',
         },
       });
-  
+
       // Check for 404 response
       if (response.status === 404) {
         console.log('No lovers found');
@@ -182,10 +226,10 @@ const Profile = () => {
         setLoverInviteResponse(null); // Clear lover invite response
         return; // Exit the function
       }
-  
+
       const data = await response.json();
       console.log('Lover invite response:', data);
-  
+
       // Check if the request was successful
       if (data.code === 200) {
         setLoverInviteResponse(data.data); // Save the response data
@@ -390,6 +434,18 @@ const Profile = () => {
                 <MaterialIcons name="person" size={20} color="white" />
               </TouchableOpacity>
 
+              {/* Couple Info */}
+              <TouchableOpacity
+                style={{ backgroundColor: '#3b3a3a' }}
+                className="flex flex-row justify-between items-center px-4 py-3 border-b border-gray-700 bg-gray-800"
+                onPress={() => {
+                  coupleInfor()
+                }}
+              >
+                <Text style={styles.buttonText}>Couple Infor</Text>
+                <MaterialIcons name="favorite" size={20} color="white" />
+              </TouchableOpacity>
+
               {/* Edit Profile */}
               <TouchableOpacity
                 style={{ backgroundColor: '#3b3a3a' }}
@@ -456,6 +512,51 @@ const Profile = () => {
       </Modal>
 
 
+      {/* Popup Couple Infor Modal */}
+      <Modal transparent={true} animationType="slide" visible={showCoupleInfo}>
+        <View style={styles.modalContainer}>
+          <View style={[styles.modalContent, { backgroundColor: '#222222' }]}>
+            <Text style={styles.modalTitle}>Couple Infor</Text>
+
+
+
+            {/* Form to add lover */}
+            <FormField
+              title="Couple Name"
+              value={coupleName}
+              handleChangeText={(e) => setUserNameLover(e)}
+              otherStyles="mt-7"
+            />
+
+            {/* Form to add lover */}
+            <FormField
+              title="Lover Name"
+              value={loverName}
+              handleChangeText={(e) => setUserNameLover(e)}
+              otherStyles="mt-7"
+              editable={false}
+            />
+
+            {/* Save button */}
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity
+                onPress={() => {
+                  
+                }}
+                style={[styles.button, { backgroundColor: '#63B5F6' }]}
+              >
+                <Text style={styles.buttonText}>Edit</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setShowCoupleInfor(false)}
+                style={[styles.button, { backgroundColor: '#63B5F6' }]}
+              >
+                <Text style={styles.buttonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
 
       {/* Modal to show lover details */}
@@ -587,18 +688,18 @@ const Profile = () => {
 
       {/* Popup No Lover */}
       <Modal transparent={true} animationType="slide" visible={showNoLoverModal}>
-    <View style={styles.modalContainer}>
-      <View style={[styles.modalContent, { backgroundColor: '#222222' }]}>
-        <Text style={styles.modalTitle}>No Lovers Found</Text>
-        <Text style={{ color: '#fff', textAlign: 'center', marginBottom: 10 }}>There are currently no lovers available.</Text>
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity onPress={() => setShowNoLoverModal(false)} style={[styles.button, { backgroundColor: '#63B5F6' }]}>
-            <Text style={styles.buttonText}>Close</Text>
-          </TouchableOpacity>
+        <View style={styles.modalContainer}>
+          <View style={[styles.modalContent, { backgroundColor: '#222222' }]}>
+            <Text style={styles.modalTitle}>No Lovers Found</Text>
+            <Text style={{ color: '#fff', textAlign: 'center', marginBottom: 10 }}>There are currently no lovers available.</Text>
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity onPress={() => setShowNoLoverModal(false)} style={[styles.button, { backgroundColor: '#63B5F6' }]}>
+                <Text style={styles.buttonText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
-      </View>
-    </View>
-  </Modal>
+      </Modal>
 
       {/* Popup Edit Profile Modal */}
       <Modal transparent={true} animationType="slide" visible={editModalVisible}>
