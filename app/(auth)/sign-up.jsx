@@ -5,7 +5,6 @@ import { images } from '../../constants';
 import FormField from '../../components/FormField';
 import CustomButton from '../../components/CustomButton';
 import { Link, router } from 'expo-router';
-import { Picker } from '@react-native-picker/picker';
 
 const SignUp = () => {
   const [form, setForm] = useState({
@@ -15,7 +14,6 @@ const SignUp = () => {
     password: '',
     sex: '', // Default value
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [sexInput, setSexInput] = useState(''); // Trạng thái cho giá trị nhập vào
   const submit = async () => {
     if (
@@ -28,7 +26,6 @@ const SignUp = () => {
       return;
     }
 
-    setIsSubmitting(true);
     try {
       const response = await fetch('https://locketcouplebe-production.up.railway.app/auth/signup', {
         method: 'POST',
@@ -37,27 +34,23 @@ const SignUp = () => {
         },
         body: JSON.stringify({
           fullName: form.fullName,
-          userName: form.username,
+          userName: form.username, // Change this to match your form state
           password: form.password,
           email: form.email,
           sex: form.sex,
-        }),
+        })
       });
 
       if (!response.ok) {
         throw new Error('Signup failed');
       }
 
-      const result = await response.json();
-      // Handle user context
-      setUser(result);
-      setIsLogged(true);
-      router.replace('/home');
+      Alert.alert('Success', 'Đăng ký thành công!', [
+        { text: 'OK', onPress: () => router.replace('/sign-in') }
+      ]);
     } catch (error) {
       Alert.alert('Error', error.message);
-    } finally {
-      setIsSubmitting(false);
-    }
+    } 
   };
 
   return (
@@ -104,7 +97,7 @@ const SignUp = () => {
           />
 
           <FormField
-            title="Giới tính (Nam/Nữ/Chưa xác định)"
+            title="Giới tính (Nam/Nữ)"
             value={sexInput} // Sử dụng trạng thái cho giá trị nhập vào
             handleChangeText={(e) => {
               const newValue = e.toLowerCase(); // Chuyển về chữ thường để so sánh dễ hơn
@@ -115,8 +108,6 @@ const SignUp = () => {
                 setForm({ ...form, sex: "MALE" });
               } else if (newValue === "nữ") {
                 setForm({ ...form, sex: "FEMALE" });
-              } else if (newValue === "chưa xác định") {
-                setForm({ ...form, sex: "OTHER" });
               }
             }}
             otherStyles="mt-7"
@@ -128,7 +119,6 @@ const SignUp = () => {
             title="Đăng ký"
             handlePress={submit}
             containerStyles="mt-7 bg-primary-300"
-            isLoading={isSubmitting}
           />
 
           <View className="justify-center pt-5 flex-row gap-2">
