@@ -17,11 +17,7 @@ export default function App() {
     <SafeAreaView className="bg-black-100 h-full">
       <ScrollView contentContainerStyle={{ height: '100%' }}>
         <View className="w-full items-center justify-center min-h-[85vh] px-4">
-          <Image
-            source={images.blinket_logo}
-            className="w-[200px]"
-            resizeMode="contain"
-          />
+          
 
           <Image
             source={images.cards}
@@ -30,7 +26,7 @@ export default function App() {
           />
           <View className="relative mt-5">
             <Text className="text-3xl font-bold text-center text-white">Khám phá khả năng vô tận với {' '}
-              <Text className="text-primary-200">Blinket</Text>
+              <Text className="text-primary-200">Locket</Text>
             </Text>
 
             <Image
