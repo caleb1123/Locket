@@ -19,7 +19,8 @@ const Profile = () => {
   const [userNameLover, setUserNameLover] = useState('');
   const [loverInviteResponse, setLoverInvite] = useState({});
   const [coupleInforResponse, setCoupleInforRespone] = useState({});
-  
+  const [coupleRemoveResponse, setCoupleRemoveResponse] = useState({});
+
 
 
   // State for modal visibility
@@ -39,6 +40,7 @@ const Profile = () => {
   const [avtUrl, setAvatarUrl] = useState(null);
   const [coupleName, setCoupleName] = useState('');
   const [loverName, setLoverName] = useState('');
+  const [coupleId, setCoupleId] = useState(0);
 
 
   useEffect(() => {
@@ -123,8 +125,39 @@ const Profile = () => {
     }
   };
 
+  const coupleRemove = async (coupleId) => {
+    try {
+      const storedToken = await AsyncStorage.getItem('authToken');
+      if (!storedToken) {
+        console.error('No authentication token found');
+        return;
+      }
+
+      const response = await fetch(`https://locketcouplebe-production.up.railway.app/couple/CancelRequest/${coupleId}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${storedToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      // Log the response details
+      const data = await response.json(); // Parse the response data
+      console.log('Response data:', data); // Log response data
+      if (response.ok) {
+        console.log('API request successful');
+        // Handle success (e.g., update UI, show success message, etc.)
+      } else {
+        console.error('API request failed:', data.message || 'Unknown error'); // Log error message from API
+      }
+
+    }catch (error) {
+      console.error('Error accepting invite:', error);
+      alert("An error occurred while accepting the invite.");
+  };}
+
   const coupleInfor = async () => {
-    try{
+    try {
       const storedToken = await AsyncStorage.getItem('authToken');
       if (!storedToken) {
         console.error('No authentication token found');
@@ -146,6 +179,7 @@ const Profile = () => {
       setCoupleInforRespone(data.data);
       setLoverName(data.data.lover.fullName)
       setCoupleName(data.data.coupleName)
+      setCoupleId(data.data.coupleId)
       if (response.ok) {
         console.log('API request successful');
         setShowCoupleInfor(true);
@@ -208,7 +242,7 @@ const Profile = () => {
         Alert.alert('Error', 'User is not authenticated');
         return;
       }
-  
+
       const response = await fetch(`https://locketcouplebe-production.up.railway.app/couple/updateCouple`, {
         method: 'POST',
         headers: {
@@ -219,16 +253,16 @@ const Profile = () => {
           coupleName,
         }),
       });
-  
+
       if (!response.ok) {
         throw new Error('Failed to update couple name');
       }
-  
+
       const result = await response.json();
       console.log('Update couple name response:', result);
-     
+
       return result;
-      
+
     } catch (error) {
       Alert.alert('Error', error.message);
     }
@@ -545,44 +579,76 @@ const Profile = () => {
 
       {/* Popup Couple Infor Modal */}
       <Modal transparent={true} animationType="slide" visible={showCoupleInfo}>
-      <View style={styles.modalContainer}>
-        <View style={[styles.modalContent, { backgroundColor: '#222222' }]}>
-          <Text style={styles.modalTitle}>Couple Infor</Text>
+        <View style={styles.modalContainer}>
+          <View style={[styles.modalContent, { backgroundColor: '#222222' }]}>
+            <Text style={styles.modalTitle}>Couple Infor</Text>
 
-          <FormField
-            title="Couple Name"
-            value={coupleName}
-            handleChangeText={(e) => setCoupleName(e)}
-            otherStyles="mt-7"
-          />
+            <FormField
+              title="Couple Name"
+              value={coupleName}
+              handleChangeText={(e) => setCoupleName(e)}
+              otherStyles="mt-7"
+            />
 
-          <FormField
-            title="Lover Name"
-            value={loverName}
-            handleChangeText={(e) => setLoverName(e)}
-            otherStyles="mt-7"
-            editable={false}
-          />
+            <FormField
+              title="Lover Name"
+              value={loverName}
+              handleChangeText={(e) => setLoverName(e)}
+              otherStyles="mt-7"
+              editable={false}
+            />
 
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              onPress={() => {
-                updateCoupleName(coupleName, setCoupleName), setShowCoupleInfor(false)
-              }}
-              style={[styles.button, { backgroundColor: '#63B5F6' }]}
-            >
-              <Text style={styles.buttonText}>Edit</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setShowCoupleInfor(false)}
-              style={[styles.button, { backgroundColor: '#63B5F6' }]}
-            >
-              <Text style={styles.buttonText}>Cancel</Text>
-            </TouchableOpacity>
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity
+                onPress={() => {
+                  updateCoupleName(coupleName, setCoupleName), setShowCoupleInfor(false)
+                }}
+                style={[styles.button, { backgroundColor: '#63B5F6' }]}
+              >
+                <Text style={styles.buttonText}>Edit</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => {
+                  setCoupleRemoveResponse(true),
+                  setShowCoupleInfor(false)
+                }}
+                style={[styles.button, { backgroundColor: '#63B5F6' }]}
+              >
+                <Text style={styles.buttonText}>Delete</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setShowCoupleInfor(false)}
+                style={[styles.button, { backgroundColor: '#63B5F6' }]}
+              >
+                <Text style={styles.buttonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
-      </View>
-    </Modal>
+      </Modal>
+      {/* Modal to show lover details */}
+      <Modal transparent={true} animationType="slide" visible={coupleRemoveResponse}>
+        <View style={styles.modalContainer}>
+          <View style={[styles.modalContent, { backgroundColor: '#222222' }]}>
+
+            {/* Confirmation message */}
+            <Text style={styles.confirmationMessage}>Are you sure you want to delete?</Text>
+
+            {/* Save button */}
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity onPress={() => {
+                coupleRemove(coupleId);
+                setCoupleRemoveResponse(false);
+              }} style={[styles.button, { backgroundColor: '#63B5F6' }]}>
+                <Text style={styles.buttonText}>Delete</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setCoupleRemoveResponse(false)} style={[styles.button, { backgroundColor: '#63B5F6' }]}>
+                <Text style={styles.buttonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
 
       {/* Modal to show lover details */}
@@ -779,7 +845,7 @@ const Profile = () => {
   );
 };
 
-export default Profile;
+  export default Profile;
 
 const styles = StyleSheet.create({
   headerText: {
@@ -828,4 +894,7 @@ const styles = StyleSheet.create({
     color: 'white',
     marginBottom: 10,
   },
+  confirmationMessage: {
+    color: 'white',
+  }
 });
