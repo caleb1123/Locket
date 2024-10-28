@@ -9,7 +9,6 @@ import FormField from '../../components/FormField';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
-import Ionicons from 'react-native-vector-icons/Ionicons';
 
 
 const Profile = () => {
@@ -202,6 +201,38 @@ const Profile = () => {
     }
   };
 
+  const updateCoupleName = async (coupleName) => {
+    try {
+      const storedToken = await AsyncStorage.getItem('authToken');
+      if (!storedToken) {
+        Alert.alert('Error', 'User is not authenticated');
+        return;
+      }
+  
+      const response = await fetch(`https://locketcouplebe-production.up.railway.app/couple/updateCouple`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${storedToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          coupleName,
+        }),
+      });
+  
+      if (!response.ok) {
+        throw new Error('Failed to update couple name');
+      }
+  
+      const result = await response.json();
+      console.log('Update couple name response:', result);
+     
+      return result;
+      
+    } catch (error) {
+      Alert.alert('Error', error.message);
+    }
+  };
 
   const loverInvite = async () => {
     try {
@@ -514,49 +545,44 @@ const Profile = () => {
 
       {/* Popup Couple Infor Modal */}
       <Modal transparent={true} animationType="slide" visible={showCoupleInfo}>
-        <View style={styles.modalContainer}>
-          <View style={[styles.modalContent, { backgroundColor: '#222222' }]}>
-            <Text style={styles.modalTitle}>Couple Infor</Text>
+      <View style={styles.modalContainer}>
+        <View style={[styles.modalContent, { backgroundColor: '#222222' }]}>
+          <Text style={styles.modalTitle}>Couple Infor</Text>
 
+          <FormField
+            title="Couple Name"
+            value={coupleName}
+            handleChangeText={(e) => setCoupleName(e)}
+            otherStyles="mt-7"
+          />
 
+          <FormField
+            title="Lover Name"
+            value={loverName}
+            handleChangeText={(e) => setLoverName(e)}
+            otherStyles="mt-7"
+            editable={false}
+          />
 
-            {/* Form to add lover */}
-            <FormField
-              title="Couple Name"
-              value={coupleName}
-              handleChangeText={(e) => setUserNameLover(e)}
-              otherStyles="mt-7"
-            />
-
-            {/* Form to add lover */}
-            <FormField
-              title="Lover Name"
-              value={loverName}
-              handleChangeText={(e) => setUserNameLover(e)}
-              otherStyles="mt-7"
-              editable={false}
-            />
-
-            {/* Save button */}
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity
-                onPress={() => {
-                  
-                }}
-                style={[styles.button, { backgroundColor: '#63B5F6' }]}
-              >
-                <Text style={styles.buttonText}>Edit</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => setShowCoupleInfor(false)}
-                style={[styles.button, { backgroundColor: '#63B5F6' }]}
-              >
-                <Text style={styles.buttonText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              onPress={() => {
+                updateCoupleName(coupleName, setCoupleName), setShowCoupleInfor(false)
+              }}
+              style={[styles.button, { backgroundColor: '#63B5F6' }]}
+            >
+              <Text style={styles.buttonText}>Edit</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setShowCoupleInfor(false)}
+              style={[styles.button, { backgroundColor: '#63B5F6' }]}
+            >
+              <Text style={styles.buttonText}>Cancel</Text>
+            </TouchableOpacity>
           </View>
         </View>
-      </Modal>
+      </View>
+    </Modal>
 
 
       {/* Modal to show lover details */}
