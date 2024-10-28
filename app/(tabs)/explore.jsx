@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   StyleSheet,
   Text,
   View,
   Image,
-  ScrollView,
+  FlatList,
   Modal,
   TouchableOpacity,
   TextInput,
@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Video } from "expo-av"; // Import Video from expo-av
 
 const Explore = () => {
   const [photos, setPhotos] = useState([]);
@@ -23,71 +24,69 @@ const Explore = () => {
   const [newComment, setNewComment] = useState("");
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const [filter, setFilter] = useState("Couple");
-
-  const fadeAnim = useState(new Animated.Value(0))[0];
+  const [fadeAnim] = useState(new Animated.Value(0));
   const [scaleAnim] = useState(new Animated.Value(1));
 
-  useEffect(() => {
-    fetchPhotos();
-  }, [filter]);
-
-  const fetchPhotos = async () => {
+  const fetchPhotos = useCallback(async () => {
     setLoading(true);
     try {
+      const token = await AsyncStorage.getItem("authToken");
+      if (!token) return;
+
       const endpoint =
         filter === "Couple"
           ? "https://locketcouplebe-production.up.railway.app/photo/findByCoupleId"
           : "https://locketcouplebe-production.up.railway.app/photo/findByLover";
 
-      const token = await AsyncStorage.getItem("authToken");
       const response = await axios.get(endpoint, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       const photosWithSenderInfo = response.data.data.map((photo) => ({
         ...photo,
         senderFullName: photo.senderId.fullName,
         senderAvatarUrl: photo.senderId.avatarUrl,
+        mediaType: photo.photoUrl.endsWith(".mp4") ? "video" : "image", // Xác định loại phương tiện
       }));
 
       setPhotos(photosWithSenderInfo);
     } catch (error) {
-      console.error(
-        "Error fetching photos:",
-        error.response?.data || error.message
-      );
+      console.error("Error fetching photos:", error.response?.data || error.message);
     } finally {
       setLoading(false);
     }
+  }, [filter]);
+
+  const startFadeIn = () => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 500,
+      useNativeDriver: true,
+    }).start();
   };
 
-  const fetchComments = async (photoId) => {
+  const fetchComments = useCallback(async (photoId) => {
     try {
       const token = await AsyncStorage.getItem("authToken");
+      if (!token) return;
+
       const response = await axios.get(
-        `https://locketcouplebe-production.up.railway.app/message/all`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        "https://locketcouplebe-production.up.railway.app/message/all",
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       const photoComments = response.data.data.filter((comment) => comment.photoId === photoId);
       setComments(photoComments);
     } catch (error) {
-      console.error(
-        "Error fetching comments:",
-        error.response?.data || error.message
-      );
+      console.error("Error fetching comments:", error.response?.data || error.message);
     }
-  };
+  }, []);
 
-  const toggleDropdown = () => {
-    setDropdownVisible(!dropdownVisible);
-  };
+  useEffect(() => {
+    fetchPhotos();
+  }, [fetchPhotos]);
+
+  const toggleDropdown = () => setDropdownVisible(!dropdownVisible);
 
   const selectFilter = (selectedFilter) => {
     setFilter(selectedFilter);
@@ -105,29 +104,21 @@ const Explore = () => {
     setComments([]);
   };
 
-  const handleCommentChange = (text) => {
-    setNewComment(text);
-  };
+  const handleCommentChange = (text) => setNewComment(text);
 
   const handleCommentSubmit = async () => {
     if (newComment.trim() === "") return;
 
     try {
       const token = await AsyncStorage.getItem("authToken");
+      if (!token) return;
+
       await axios.post(
         "https://locketcouplebe-production.up.railway.app/message/create",
-        {
-          messageContent: newComment,
-          photoId: selectedPhoto.photoId,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        { messageContent: newComment, photoId: selectedPhoto.photoId },
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      // Add the new comment
       const updatedComments = [
         ...comments,
         { messageContent: newComment, photoId: selectedPhoto.photoId },
@@ -135,35 +126,31 @@ const Explore = () => {
       setComments(updatedComments);
       setNewComment("");
     } catch (error) {
-      console.error(
-        "Error posting comment:",
-        error.response?.data || error.message
-      );
+      console.error("Error posting comment:", error.response?.data || error.message);
     }
   };
 
-  const startFadeIn = () => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 500,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const handlePressIn = () => {
-    Animated.spring(scaleAnim, {
-      toValue: 0.95,
-      friction: 3,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const handlePressOut = () => {
-    Animated.spring(scaleAnim, {
-      toValue: 1,
-      friction: 3,
-      useNativeDriver: true,
-    }).start();
+  const renderMedia = (media) => {
+    if (media.mediaType === "video") {
+      return (
+        <Video
+          source={{ uri: media.photoUrl }}
+          style={styles.fullScreenPhoto}
+          resizeMode="contain"
+          shouldPlay
+          isLooping
+          useNativeControls
+        />
+      );
+    } else {
+      return (
+        <Animated.Image
+          source={{ uri: selectedPhoto.photoUrl }}
+          style={styles.fullScreenPhoto}
+          onLoad={startFadeIn}
+        />
+      );
+    }
   };
 
   if (loading) {
@@ -186,6 +173,7 @@ const Explore = () => {
           </Text>
         </TouchableOpacity>
       </View>
+
       {dropdownVisible && (
         <View style={styles.dropdown}>
           <TouchableOpacity onPress={() => selectFilter("Couple")}>
@@ -197,45 +185,41 @@ const Explore = () => {
         </View>
       )}
 
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.innerContainer}>
-          {photos.map((photo) => (
-            <TouchableOpacity
-              key={photo.photoId}
-              onPress={() => openPhoto(photo)}
-              onPressIn={handlePressIn}
-              onPressOut={handlePressOut}
-            >
-              <Animated.View
-                style={[
-                  styles.photoContainer,
-                  { transform: [{ scale: scaleAnim }] },
-                ]}
-              >
-                <Animated.Image
-                  source={{ uri: photo.photoUrl }}
-                  style={[styles.photo, { opacity: fadeAnim }]}
-                  onLoad={startFadeIn}
+      <FlatList
+        data={photos}
+        keyExtractor={(item) => item.photoId.toString()}
+        contentContainerStyle={styles.innerContainer}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            onPress={() => openPhoto(item)}
+            onPressIn={() => scaleAnim.setValue(0.95)}
+            onPressOut={() => scaleAnim.setValue(1)}
+          >
+            <Animated.View style={[styles.photoContainer, { transform: [{ scale: scaleAnim }] }]}>
+              {item.mediaType === "video" ? (
+                <Video
+                  source={{ uri: item.photoUrl }}
+                  style={styles.photo}
+                  resizeMode="cover"
+                  isLooping
+                  shouldPlay={false} // Chỉ phát khi được mở
                 />
-                <View style={styles.overlay}>
-                  <Text style={styles.photoName}>{photo.photoName}</Text>
-                  <View style={styles.senderInfo}>
-                    {photo.senderAvatarUrl && (
-                      <Image
-                        source={{ uri: photo.senderAvatarUrl }}
-                        style={styles.avatar}
-                      />
-                    )}
-                    <Text style={styles.senderName}>
-                      {photo.senderFullName}
-                    </Text>
-                  </View>
+              ) : (
+                <Image source={{ uri: item.photoUrl }} style={styles.photo} />
+              )}
+              <View style={styles.overlay}>
+                <Text style={styles.photoName}>{item.photoName}</Text>
+                <View style={styles.senderInfo}>
+                  {item.senderAvatarUrl && (
+                    <Image source={{ uri: item.senderAvatarUrl }} style={styles.avatar} />
+                  )}
+                  <Text style={styles.senderName}>{item.senderFullName}</Text>
                 </View>
-              </Animated.View>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </ScrollView>
+              </View>
+            </Animated.View>
+          </TouchableOpacity>
+        )}
+      />
 
       {selectedPhoto && (
         <Modal visible={true} transparent={true}>
@@ -244,11 +228,9 @@ const Explore = () => {
               <Text style={styles.closeText}>Close</Text>
             </TouchableOpacity>
 
-            <Animated.Image
-              source={{ uri: selectedPhoto.photoUrl }}
-              style={styles.fullScreenPhoto}
-              onLoad={startFadeIn}
-            />
+            
+
+            {renderMedia(selectedPhoto)}
             <Text style={styles.photoName}>{selectedPhoto.photoName}</Text>
 
             <TextInput
@@ -267,7 +249,7 @@ const Explore = () => {
                     {comment.messageContent}
                   </Text>
                   <Text style={styles.commentMetadata}>
-                    User ID: {comment.userId} | Photo ID: {comment.photoId}
+                    User ID: {comment.userId.fullName} | Photo ID: {comment.photoId}
                   </Text>
                 </View>
               ))}
@@ -275,6 +257,8 @@ const Explore = () => {
           </View>
         </Modal>
       )}
+
+
     </SafeAreaView>
   );
 };
@@ -308,34 +292,34 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     backgroundColor: "#333",
     borderRadius: 10,
-    paddingVertical: 5,
-    width: 160,
-    zIndex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    elevation: 5,
   },
   dropdownItem: {
-    padding: 10,
     fontSize: 16,
     color: "white",
-    textAlign: "center",
+    paddingVertical: 5,
   },
   innerContainer: {
-    alignItems: "center",
-  },
-  innerContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 20,
+    paddingBottom: 100,
   },
   photoContainer: {
-    width: 300,
-    height: 400,
-    marginBottom: 15,
+    margin: 10,
     borderRadius: 10,
     overflow: "hidden",
+    elevation: 5,
   },
   photo: {
     width: "100%",
-    height: "100%",
+    height: 200,
+  },
+  fullScreenPhoto: {
+    width: "100%",
+    height: "50%",
+    borderRadius: 10,
+    marginBottom: 20,
+    marginTop: 70,
   },
   overlay: {
     position: "absolute",
@@ -343,30 +327,29 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
-    padding: 5,
+    padding: 10,
   },
   photoName: {
     color: "white",
-    fontSize: 14,
+    fontSize: 16,
   },
   senderInfo: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 5,
   },
   avatar: {
     width: 30,
     height: 30,
     borderRadius: 15,
-    marginRight: 5,
+    marginRight: 10,
   },
   senderName: {
     color: "white",
-    fontSize: 12,
+    fontSize: 14,
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.8)",
+    backgroundColor: "black",
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
@@ -375,20 +358,10 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 40,
     right: 20,
-    padding: 10,
-    backgroundColor: "#444",
-    borderRadius: 5,
   },
   closeText: {
     color: "white",
-    fontSize: 16,
-  },
-  fullScreenPhoto: {
-    width: "100%",
-    height: "50%",
-    borderRadius: 10,
-    marginBottom: 20,
-    marginTop: 70,
+    fontSize: 18,
   },
   commentInput: {
     width: "100%",
@@ -403,13 +376,14 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   commentItem: {
-    backgroundColor: "#444",
-    padding: 10,
+    backgroundColor: "#333",
     borderRadius: 5,
-    marginBottom: 10,
+    padding: 10,
+    marginBottom: 5,
   },
   commentText: {
     color: "white",
+    fontSize: 14,
   },
   commentMetadata: {
     color: "lightgray",
