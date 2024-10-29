@@ -14,7 +14,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Video } from "expo-av"; // Import Video from expo-av
+import { Video } from "expo-av";
 
 const Explore = () => {
   const [photos, setPhotos] = useState([]);
@@ -46,12 +46,15 @@ const Explore = () => {
         ...photo,
         senderFullName: photo.senderId.fullName,
         senderAvatarUrl: photo.senderId.avatarUrl,
-        mediaType: photo.photoUrl.endsWith(".mp4") ? "video" : "image", // Xác định loại phương tiện
+        mediaType: photo.photoUrl.endsWith(".mp4") ? "video" : "image",
       }));
 
       setPhotos(photosWithSenderInfo);
     } catch (error) {
-      console.error("Error fetching photos:", error.response?.data || error.message);
+      console.error(
+        "Error fetching photos:",
+        error.response?.data || error.message
+      );
     } finally {
       setLoading(false);
     }
@@ -75,10 +78,15 @@ const Explore = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      const photoComments = response.data.data.filter((comment) => comment.photoId === photoId);
+      const photoComments = response.data.data.filter(
+        (comment) => comment.photoId === photoId
+      );
       setComments(photoComments);
     } catch (error) {
-      console.error("Error fetching comments:", error.response?.data || error.message);
+      console.error(
+        "Error fetching comments:",
+        error.response?.data || error.message
+      );
     }
   }, []);
 
@@ -126,7 +134,10 @@ const Explore = () => {
       setComments(updatedComments);
       setNewComment("");
     } catch (error) {
-      console.error("Error posting comment:", error.response?.data || error.message);
+      console.error(
+        "Error posting comment:",
+        error.response?.data || error.message
+      );
     }
   };
 
@@ -195,14 +206,19 @@ const Explore = () => {
             onPressIn={() => scaleAnim.setValue(0.95)}
             onPressOut={() => scaleAnim.setValue(1)}
           >
-            <Animated.View style={[styles.photoContainer, { transform: [{ scale: scaleAnim }] }]}>
+            <Animated.View
+              style={[
+                styles.photoContainer,
+                { transform: [{ scale: scaleAnim }] },
+              ]}
+            >
               {item.mediaType === "video" ? (
                 <Video
                   source={{ uri: item.photoUrl }}
                   style={styles.photo}
                   resizeMode="cover"
                   isLooping
-                  shouldPlay={false} // Chỉ phát khi được mở
+                  shouldPlay={false}
                 />
               ) : (
                 <Image source={{ uri: item.photoUrl }} style={styles.photo} />
@@ -211,7 +227,10 @@ const Explore = () => {
                 <Text style={styles.photoName}>{item.photoName}</Text>
                 <View style={styles.senderInfo}>
                   {item.senderAvatarUrl && (
-                    <Image source={{ uri: item.senderAvatarUrl }} style={styles.avatar} />
+                    <Image
+                      source={{ uri: item.senderAvatarUrl }}
+                      style={styles.avatar}
+                    />
                   )}
                   <Text style={styles.senderName}>{item.senderFullName}</Text>
                 </View>
@@ -228,8 +247,6 @@ const Explore = () => {
               <Text style={styles.closeText}>Close</Text>
             </TouchableOpacity>
 
-            
-
             {renderMedia(selectedPhoto)}
             <Text style={styles.photoName}>{selectedPhoto.photoName}</Text>
 
@@ -244,12 +261,23 @@ const Explore = () => {
 
             <View style={styles.commentsContainer}>
               {comments.map((comment, index) => (
-                <View key={`${comment.photoId}-${index}`} style={styles.commentItem}>
+                <View
+                  key={`${comment.photoId}-${index}`}
+                  style={styles.commentItem}
+                >
+                  <View style={styles.commentHeader}>
+                    {comment.userId?.avatarUrl ? (
+                      <Image
+                        source={{ uri: comment.userId.avatarUrl }}
+                        style={styles.avatar}
+                      />
+                    ) : null}
+                    <Text style={styles.commentUsername}>
+                      {comment.userId?.fullName || "Anonymous"}
+                    </Text>
+                  </View>
                   <Text style={styles.commentText}>
                     {comment.messageContent}
-                  </Text>
-                  <Text style={styles.commentMetadata}>
-                    User ID: {comment.userId.fullName} | Photo ID: {comment.photoId}
                   </Text>
                 </View>
               ))}
@@ -257,8 +285,6 @@ const Explore = () => {
           </View>
         </Modal>
       )}
-
-
     </SafeAreaView>
   );
 };
@@ -294,7 +320,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 20,
-    elevation: 5,
+    zIndex: 10,
+    elevation: 10,
   },
   dropdownItem: {
     fontSize: 16,
@@ -302,45 +329,41 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   innerContainer: {
-    paddingBottom: 100,
+    padding: 10,
   },
   photoContainer: {
-    margin: 10,
+    marginBottom: 15,
+    position: "relative",
     borderRadius: 10,
     overflow: "hidden",
-    elevation: 5,
   },
   photo: {
     width: "100%",
     height: 200,
-  },
-  fullScreenPhoto: {
-    width: "100%",
-    height: "50%",
     borderRadius: 10,
-    marginBottom: 20,
-    marginTop: 70,
   },
   overlay: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
     padding: 10,
+    backgroundColor: "rgba(0,0,0,0.6)",
   },
   photoName: {
     color: "white",
     fontSize: 16,
+    fontWeight: "bold",
   },
   senderInfo: {
     flexDirection: "row",
     alignItems: "center",
+    marginTop: 5,
   },
   avatar: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 25,
+    height: 25,
+    borderRadius: 12.5,
     marginRight: 10,
   },
   senderName: {
@@ -349,44 +372,54 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: "black",
+    backgroundColor: "rgba(0, 0, 0, 0.9)",
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
   },
   closeButton: {
-    position: "absolute",
-    top: 40,
-    right: 20,
+    alignSelf: "flex-end",
+    padding: 10,
   },
   closeText: {
     color: "white",
-    fontSize: 18,
+    fontSize: 16,
+  },
+  fullScreenPhoto: {
+    width: "100%",
+    height: "50%",
+    borderRadius: 10,
   },
   commentInput: {
-    width: "100%",
-    padding: 10,
-    backgroundColor: "#222",
-    borderRadius: 5,
+    height: 40,
+    width: "90%",
+    backgroundColor: "#333",
     color: "white",
-    marginBottom: 20,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    marginVertical: 10,
   },
   commentsContainer: {
-    width: "100%",
-    marginTop: 20,
+    width: "90%",
+    paddingTop: 10,
   },
   commentItem: {
+    marginBottom: 10,
     backgroundColor: "#333",
-    borderRadius: 5,
     padding: 10,
+    borderRadius: 10,
+  },
+  commentHeader: {
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 5,
+  },
+  commentUsername: {
+    color: "white",
+    fontSize: 14,
+    fontWeight: "bold",
   },
   commentText: {
     color: "white",
     fontSize: 14,
-  },
-  commentMetadata: {
-    color: "lightgray",
-    fontSize: 12,
   },
 });
